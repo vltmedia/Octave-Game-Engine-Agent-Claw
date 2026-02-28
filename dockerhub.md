@@ -143,5 +143,4 @@ volumes:
 ## Links
 
 - [Octave Engine](https://github.com/vltmedia/octave)
-- [OpenClaw Documentation](https://docs.openclaw.ai)
-- [Source & Dockerfile](https://github.com/vltmedia/octave-dev-claw)
+- [Source & Dockerfile](https://github.com/vltmedia/Octave-Game-Engine-Agent-Claw/blob/main/Dockerfile)
