@@ -29,7 +29,9 @@ Open the Control UI at **http://localhost:3348** and enter the auth token (defau
 - **Node 22** runtime with OpenClaw installed via npm
 - **octave_dev skill** — a comprehensive Octave Engine development prompt covering RTTI/factory patterns, serialization, node/asset/graph node creation, Lua bindings, editor panels, and platform-specific code
 - On first boot, automatically clones the Octave repository into the container workspace
+- **Agent memory** files baked into the image for pre-seeded context
 - Persistent volume keeps credentials, session history, and the cloned repo across restarts
+- **Sync mode** (`SYNC_MODE=true`) to force-refresh config, skills, and memory from the image on every boot
 
 ## Environment Variables
 
@@ -37,6 +39,7 @@ Open the Control UI at **http://localhost:3348** and enter the auth token (defau
 |----------|----------|-------------|
 | `OCTAVE_REPO` | Yes | Git URL for the Octave repository |
 | `OPENCLAW_HOME` | No | OpenClaw data directory (default: `/data/openclaw`) |
+| `SYNC_MODE` | No | Set to `true` to overwrite config/skills/memory from the image on every boot. Default: only copies on first run. |
 
 ## Ports
 
@@ -101,6 +104,21 @@ Credentials are stored in the persistent volume — you only need to do this onc
 - **Code review** — "Check this Node implementation for missing registration, guards, or serialization version gating"
 - **Onboard new developers** — "Walk me through the rendering pipeline from Vulkan init to frame submission"
 
+## Sync Mode
+
+By default, config, skills, and memory are only copied into the volume on first boot. To always overwrite from the image (useful when iterating on skills or config):
+
+```bash
+docker run -d \
+  -e SYNC_MODE=true \
+  -e OCTAVE_REPO=https://github.com/vltmedia/octave \
+  -e OPENCLAW_HOME=/data/openclaw \
+  -p 3348:3000 \
+  -v openclaw_octave_state:/data/openclaw \
+  --tty --interactive \
+  vltmedia/octave-dev-claw:latest
+```
+
 ## Docker Compose
 
 ```yaml
@@ -110,6 +128,7 @@ services:
     environment:
       OCTAVE_REPO: https://github.com/vltmedia/octave
       OPENCLAW_HOME: /data/openclaw
+      # SYNC_MODE: "true"  # Uncomment to overwrite config/skills/memory on every boot
     ports:
       - "3348:3000"
     volumes:

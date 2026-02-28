@@ -188,9 +188,10 @@ docker volume rm openclaw_octave_state
 ├── .env                    # Environment variables (OCTAVE_REPO)
 ├── openclaw/
 │   ├── openclaw.json       # OpenClaw gateway + agent configuration
-│   └── skills/
-│       └── octave_dev/
-│           └── SKILL.md    # The Octave Engine developer skill
+│   ├── skills/
+│   │   └── octave_dev/
+│   │       └── SKILL.md    # The Octave Engine developer skill
+│   └── memory/             # Agent memory files (persisted into workspace)
 └── README.md
 ```
 
@@ -217,12 +218,35 @@ ports:
 
 Then update `gateway.controlUi.allowedOrigins` in `openclaw/openclaw.json` to match.
 
+### Sync mode
+
+By default, the config, skills, and memory files are only copied into the volume on the **first boot** (tracked by a `flag.json` marker). This means changes you make inside the container (via onboarding, editing config, etc.) are preserved across restarts.
+
+If you want the container to **always overwrite** the volume config/skills/memory with what's baked into the image, set `SYNC_MODE=true`:
+
+```yaml
+# docker-compose.yml
+environment:
+  SYNC_MODE: "true"
+```
+
+Or with plain Docker:
+
+```bash
+docker run -d \
+  -e SYNC_MODE=true \
+  ...
+```
+
+This is useful during development when you're iterating on `openclaw.json`, skills, or memory files and want every rebuild to push the latest changes into the running volume.
+
 ### Persistent data
 
 The Docker volume `openclaw_octave_state` persists:
 - The cloned Octave repository
 - OpenClaw credentials (from onboarding)
 - Session history and memory
+- Config and skills (after first boot, unless `SYNC_MODE=true`)
 
 To fully reset, remove the volume:
 

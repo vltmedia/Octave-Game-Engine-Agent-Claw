@@ -19,6 +19,7 @@ WORKDIR ${WORKSPACE}
 COPY openclaw/openclaw.json /root/.openclaw/openclaw.json
 COPY openclaw/openclaw.json /tmp/openclaw.json
 COPY openclaw/skills/ /tmp/skills/
+COPY openclaw/memory/ /tmp/memory/
 
 EXPOSE 3000
 

@@ -4,6 +4,7 @@ services:
     environment:
       OCTAVE_REPO: ${OCTAVE_REPO}
       OPENCLAW_HOME: /data/openclaw
+      SYNC_MODE: "false"
     ports:
       - "3348:3000"
     volumes:
