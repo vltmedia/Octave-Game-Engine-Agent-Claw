@@ -40,6 +40,8 @@ Open the Control UI at **http://localhost:3348** and enter the auth token (defau
 | `OCTAVE_REPO` | Yes | Git URL for the Octave repository |
 | `OPENCLAW_HOME` | No | OpenClaw data directory (default: `/data/openclaw`) |
 | `SYNC_MODE` | No | Set to `true` to overwrite config/skills/memory from the image on every boot. Default: only copies on first run. |
+| `ALLOWED_ORIGINS` | No | Comma-separated list of allowed origins for the Control UI (e.g., `http://localhost:3348,https://myhost.example.com`). Patches the config at runtime. |
+| `GATEWAY_TOKEN` | No | Override the gateway auth token at runtime without editing `openclaw.json`. |
 
 ## Ports
 
@@ -59,27 +61,22 @@ Map it to any host port you like (e.g., `-p 3348:3000`).
 
 The gateway requires a token to connect. Default token: `lobstero`.
 
-To change it, shell into the container and edit the config:
-
-```bash
-docker exec -it octave_claw bash
-vi /data/openclaw/.openclaw/openclaw.json
-# Change gateway.auth.token to your preferred value
-```
-
-Or mount your own config file:
+You can override the token and allowed origins via environment variables — no rebuild needed:
 
 ```bash
 docker run -d \
   --name octave_claw \
   -e OCTAVE_REPO=https://github.com/vltmedia/octave \
   -e OPENCLAW_HOME=/data/openclaw \
+  -e GATEWAY_TOKEN=my-secret-token \
+  -e ALLOWED_ORIGINS="http://localhost:3348,https://myhost.example.com" \
   -p 3348:3000 \
   -v openclaw_octave_state:/data/openclaw \
-  -v ./openclaw/openclaw.json:/tmp/openclaw.json \
   --tty --interactive \
   vltmedia/octave-dev-claw:latest
 ```
+
+The entrypoint patches the config JSON at runtime with the values from `GATEWAY_TOKEN` and `ALLOWED_ORIGINS`.
 
 ## Onboarding
 
@@ -128,7 +125,9 @@ services:
     environment:
       OCTAVE_REPO: https://github.com/vltmedia/octave
       OPENCLAW_HOME: /data/openclaw
-      # SYNC_MODE: "true"  # Uncomment to overwrite config/skills/memory on every boot
+      # SYNC_MODE: "true"       # Uncomment to overwrite config/skills/memory on every boot
+      # ALLOWED_ORIGINS: "http://localhost:3348,https://myhost.example.com"
+      # GATEWAY_TOKEN: "my-secret-token"
     ports:
       - "3348:3000"
     volumes:

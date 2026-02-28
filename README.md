@@ -108,11 +108,49 @@ docker compose exec octave_claw openclaw devices list
 docker compose exec octave_claw openclaw devices approve <requestId>
 ```
 
+### Allowed origins
+
+The Control UI enforces CORS via `allowedOrigins`. By default it only allows `http://localhost:3348`. To allow additional origins (e.g., accessing from a remote host), set the `ALLOWED_ORIGINS` environment variable as a comma-separated list:
+
+```yaml
+# docker-compose.yml
+environment:
+  ALLOWED_ORIGINS: "http://localhost:3348,https://myhost.example.com"
+```
+
+Or with plain Docker:
+
+```bash
+docker run -d \
+  -e ALLOWED_ORIGINS="http://localhost:3348,https://myhost.example.com" \
+  ...
+```
+
+The entrypoint patches the config JSON at runtime, so you don't need to rebuild.
+
+### Gateway token via environment
+
+You can override the auth token at runtime without editing `openclaw.json`:
+
+```yaml
+# docker-compose.yml
+environment:
+  GATEWAY_TOKEN: "my-secret-token"
+```
+
+Or with plain Docker:
+
+```bash
+docker run -d \
+  -e GATEWAY_TOKEN="my-secret-token" \
+  ...
+```
+
 ### Security notes
 
 - The gateway binds to `0.0.0.0` inside the container (`bind: "lan"`) so Docker can route traffic to it. It is only exposed on port `3348` on your host.
 - Do **not** expose port `3348` to the public internet without changing the token to something strong and re-enabling device auth.
-- The `allowedOrigins` in the config restricts Control UI access to `http://localhost:3348`. Update this if you access it from a different host or port.
+- The `allowedOrigins` in the config restricts Control UI access to `http://localhost:3348`. Use `ALLOWED_ORIGINS` to add more origins.
 
 ## Running Without Docker Compose
 

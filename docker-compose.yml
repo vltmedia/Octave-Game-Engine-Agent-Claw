@@ -5,6 +5,8 @@ services:
       OCTAVE_REPO: ${OCTAVE_REPO}
       OPENCLAW_HOME: /data/openclaw
       SYNC_MODE: "false"
+      # ALLOWED_ORIGINS: "http://localhost:3348,https://myhost.example.com"
+      # GATEWAY_TOKEN: "my-secret-token"
     ports:
       - "3348:3000"
     volumes:
