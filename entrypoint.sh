@@ -17,34 +17,72 @@ fi
 
 cd "$OCTAVE_DIR"
 
+# Ensure directories exist
+mkdir -p /data/openclaw/.openclaw/workspace/memory
+mkdir -p /data/openclaw/.openclaw/workspace/skills
+mkdir -p /root/.openclaw/skills
+mkdir -p /root/.openclaw/memory
 
-# Copy config and skills:
-# - SYNC_MODE=true: always sync from the image on every boot
-# - Otherwise: only copy on first run (when flag.json is missing)
+# First run: copy everything from the image
+if [ ! -f /data/openclaw/.openclaw/flag.json ]; then
+  echo "First run detected, copying config and skills"
+  cp /tmp/openclaw.json /data/openclaw/.openclaw/openclaw.json
+  cp /tmp/openclaw.json /root/.openclaw/openclaw.json
+  cp -r /tmp/skills/* /data/openclaw/.openclaw/workspace/skills/
+  cp -r /tmp/memory/* /data/openclaw/.openclaw/workspace/memory/
+  cp -r /tmp/skills/* /root/.openclaw/skills/
+  cp -r /tmp/memory/* /root/.openclaw/memory/
+  touch /data/openclaw/.openclaw/flag.json
+fi
 
-if [ "$SYNC_MODE" = "true" ] || [ ! -f /data/openclaw/.openclaw/flag.json ]; then
-
-  # Copy config into both possible locations
-  mkdir -p /data/openclaw/.openclaw/workspace/memory
-  mkdir -p /data/openclaw/.openclaw/workspace/skills
-  mkdir -p /root/.openclaw/skills
-  mkdir -p /root/.openclaw/memory
-
-
-  # Copy skills to all discovery paths (workspace, managed, home)
+# Sync mode: only overwrite skills and memory, merge config (preserves runtime changes like discord tokens, onboarding creds)
+if [ "$SYNC_MODE" = "true" ]; then
+  echo "Sync mode: updating skills and memory from image"
   cp -r /tmp/skills/* /data/openclaw/.openclaw/workspace/skills/
   cp -r /tmp/memory/* /data/openclaw/.openclaw/workspace/memory/
   cp -r /tmp/skills/* /root/.openclaw/skills/
   cp -r /tmp/memory/* /root/.openclaw/memory/
 
-
-
-  echo "First run detected, copying config to /data/openclaw/.openclaw"
-  cp /tmp/openclaw.json /data/openclaw/.openclaw/openclaw.json
-  cp /tmp/openclaw.json /root/.openclaw/openclaw.json
-  # Create a flag file to indicate that the config has been copied
-  touch /data/openclaw/.openclaw/flag.json
+  # Merge image config into existing config (image values win, but existing keys not in image are preserved)
+  for cfg in /data/openclaw/.openclaw/openclaw.json /root/.openclaw/openclaw.json; do
+    if [ -f "$cfg" ]; then
+      node -e "
+        const fs = require('fs');
+        const deepMerge = (target, source) => {
+          for (const key of Object.keys(source)) {
+            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])
+                && target[key] && typeof target[key] === 'object' && !Array.isArray(target[key])) {
+              deepMerge(target[key], source[key]);
+            } else {
+              target[key] = source[key];
+            }
+          }
+          return target;
+        };
+        const existing = JSON.parse(fs.readFileSync('$cfg', 'utf8'));
+        const image = JSON.parse(fs.readFileSync('/tmp/openclaw.json', 'utf8'));
+        const merged = deepMerge(existing, image);
+        fs.writeFileSync('$cfg', JSON.stringify(merged, null, 2) + '\n');
+      "
+    fi
+  done
+  echo "Sync mode: merged config from image (preserving runtime changes)"
 fi
+
+# Runtime patches — these only touch specific fields, preserving everything else
+for cfg in /data/openclaw/.openclaw/openclaw.json /root/.openclaw/openclaw.json; do
+  if [ -f "$cfg" ]; then
+    node -e "
+      const fs = require('fs');
+      const cfg = JSON.parse(fs.readFileSync('$cfg', 'utf8'));
+      cfg.gateway = cfg.gateway || {};
+      cfg.gateway.controlUi = cfg.gateway.controlUi || {};
+      cfg.gateway.controlUi.dangerouslyDisableDeviceAuth = true;
+      cfg.gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback = true;
+      fs.writeFileSync('$cfg', JSON.stringify(cfg, null, 2) + '\n');
+    "
+  fi
+done
 
 # Patch allowedOrigins at runtime if ALLOWED_ORIGINS is set
 # Accepts a comma-separated list, e.g. ALLOWED_ORIGINS="http://localhost:3348,https://myhost.example.com"
@@ -52,7 +90,6 @@ if [ -n "$ALLOWED_ORIGINS" ]; then
   ORIGINS_JSON=$(echo "$ALLOWED_ORIGINS" | sed 's/,/","/g' | sed 's/^/["/' | sed 's/$/"]/')
   for cfg in /data/openclaw/.openclaw/openclaw.json /root/.openclaw/openclaw.json; do
     if [ -f "$cfg" ]; then
-      TMP=$(mktemp)
       node -e "
         const fs = require('fs');
         const cfg = JSON.parse(fs.readFileSync('$cfg', 'utf8'));
@@ -86,5 +123,4 @@ fi
 # Fix permissions
 chmod 700 /data/openclaw/.openclaw
 
-
-exec openclaw gateway run --bind lan --port 3000 --auth token
+exec openclaw gateway run --bind lan --port 3000

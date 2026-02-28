@@ -67,7 +67,8 @@
     "bind": "lan",
     "controlUi": {
       "allowedOrigins": ["http://localhost:3348"],
-      "dangerouslyDisableDeviceAuth": true
+      "dangerouslyDisableDeviceAuth": true,
+      "dangerouslyAllowHostHeaderOriginFallback": true
     },
     "auth": {
       "mode": "token",
