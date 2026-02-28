@@ -1,0 +1,15 @@
+services:
+  octave_claw:
+    build: .
+    environment:
+      OCTAVE_REPO: ${OCTAVE_REPO}
+      OPENCLAW_HOME: /data/openclaw
+    ports:
+      - "3348:3000"
+    volumes:
+      - openclaw_octave_state:/data/openclaw
+    tty: true
+    stdin_open: true
+
+volumes:
+  openclaw_octave_state:
