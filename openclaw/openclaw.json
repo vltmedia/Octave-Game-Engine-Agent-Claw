@@ -90,13 +90,9 @@
     }
   },
   "skills": {
-    "install": {
-      "nodeManager": "npm"
-    },
     "load": {
       "extraDirs": [
-        "/data/openclaw/.openclaw/workspace/skills",
-        "/root/.openclaw/skills"
+        "/data/openclaw/.openclaw/workspace/skills"
       ],
       "watch": true
     },

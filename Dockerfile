@@ -18,8 +18,8 @@ WORKDIR ${WORKSPACE}
 # Copy OpenClaw config (staged for runtime copy since /data/openclaw is a volume)
 COPY openclaw/openclaw.json /root/.openclaw/openclaw.json
 COPY openclaw/openclaw.json /tmp/openclaw.json
-COPY openclaw/skills/ /tmp/skills/
-COPY openclaw/memory/ /tmp/memory/
+COPY openclaw/workspace/skills/ /tmp/skills/
+COPY openclaw/workspace/memory/ /tmp/memory/
 
 EXPOSE 3000
 
